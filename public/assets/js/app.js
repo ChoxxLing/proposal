@@ -1,8 +1,11 @@
-const API = '../api/index.php';
+const API = window.APP_API || '../api/index.php';
+const ADMIN_URL = window.APP_ADMIN_URL || 'admin.php';
 const state = {
   seminars: [],
   students: [],
   scanner: null,
+  scannerStream: null,
+  scannerBusy: false,
   lastScan: '',
   lastScanAt: 0
 };
@@ -25,8 +28,21 @@ function setMessage(selector, message) {
   if (el) el.textContent = message;
 }
 
+function setScanStatus(message, type = '') {
+  const el = $('#scanStatus');
+  if (!el) return;
+  el.textContent = message;
+  el.classList.remove('ok', 'warn');
+  if (type) el.classList.add(type);
+}
+
 function currentSeminarId(selector = '#attendanceSeminar') {
   return Number($(selector)?.value || 0);
+}
+
+function activatePage(pageName) {
+  $$('.nav-link').forEach((item) => item.classList.toggle('active', item.dataset.page === pageName));
+  $$('.page').forEach((page) => page.classList.toggle('active', page.id === `page-${pageName}`));
 }
 
 function fillSeminarSelects() {
@@ -70,14 +86,28 @@ async function loadDashboard() {
   $('#metricAbsent').textContent = scoped.absent;
   $('#metricRate').textContent = `${scoped.attendance_rate}%`;
 
-  $('#smsLogRows').innerHTML = (data.sms_logs || []).map((log) => `
-    <tr>
-      <td>${esc(log.title)}</td>
-      <td>${esc(log.phone)}</td>
-      <td><span class="status">${esc(log.status)}</span></td>
-      <td>${esc(log.sent_at)}</td>
-    </tr>
-  `).join('');
+  $('#sessionRows').innerHTML = (data.sessions || []).map((session) => {
+    const date = new Date(`${session.seminar_date}T00:00:00`);
+    const day = Number.isNaN(date.getTime()) ? '--' : String(date.getDate()).padStart(2, '0');
+    const month = Number.isNaN(date.getTime()) ? '' : date.toLocaleString('en', { month: 'short' }).toUpperCase();
+    const rate = Number(session.attendance_rate || 0);
+    const rateText = Number.isInteger(rate) ? String(rate) : rate.toFixed(2).replace(/\.?0+$/, '');
+
+    return `
+      <button class="session-row" type="button" data-session-id="${session.id}">
+        <span class="session-date"><strong>${esc(day)}</strong><small>${esc(month)}</small></span>
+        <span class="session-main">
+          <strong>${esc(session.title)}</strong>
+          <small>${esc(session.seminar_date)} | ${esc(session.start_time)} - ${esc(session.end_time)}</small>
+        </span>
+        <span class="session-progress">
+          <small>Attendance</small>
+          <span><em>${esc(rateText)}%</em><strong>${esc(session.present)}/${esc(session.total_students)}</strong></span>
+        </span>
+        <span class="session-arrow" aria-hidden="true">&rsaquo;</span>
+      </button>
+    `;
+  }).join('') || '<p class="muted">No seminar sessions yet.</p>';
 }
 
 async function fetchStats(seminarId) {
@@ -99,7 +129,7 @@ async function loadStudents() {
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(student.qr_token)}`;
     return `
       <tr>
-        <td><strong>${esc(student.last_name)}, ${esc(student.first_name)}</strong><small>${esc(student.student_no)} | ${esc(student.grade_level)} ${esc(student.section)}</small></td>
+        <td><strong>${esc(student.last_name)}, ${esc(student.first_name)}</strong><small>${esc(student.student_no)} | Batch ${esc(student.batch_num)} ${esc(student.section)}</small></td>
         <td>${esc(student.parent_name)}</td>
         <td>${esc(student.parent_phone)}</td>
         <td><img class="qr" src="${qrUrl}" alt="QR for ${esc(student.student_no)}"><small>${esc(student.qr_token)}</small></td>
@@ -136,7 +166,9 @@ async function loadReport() {
     return;
   }
 
-  const res = await fetch(`${API}?resource=attendance&action=report&seminar_id=${seminarId}`);
+  const status = $('#reportStatus')?.value || '';
+  const statusParam = status ? `&status=${encodeURIComponent(status)}` : '';
+  const res = await fetch(`${API}?resource=attendance&action=report&seminar_id=${seminarId}${statusParam}`);
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Unable to load report.');
 
@@ -163,35 +195,190 @@ async function submitQrToken(token) {
   await refreshLiveData();
 }
 
+function scannerErrorMessage(error) {
+  if (!error) return 'Unable to start the camera scanner.';
+  if (error.name === 'NotAllowedError' || error.name === 'SecurityError') {
+    return 'Camera permission was blocked. Allow camera access in your browser settings, then try again.';
+  }
+  if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+    return 'No camera was found on this device.';
+  }
+  if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+    return 'The camera is already in use by another app or browser tab.';
+  }
+  return error.message || 'Unable to start the camera scanner.';
+}
+
+function stopScanner(message = 'Camera stopped.') {
+  if (state.scanner) {
+    window.clearInterval(state.scanner);
+    state.scanner = null;
+  }
+
+  if (state.scannerStream) {
+    state.scannerStream.getTracks().forEach((track) => track.stop());
+    state.scannerStream = null;
+  }
+
+  const video = $('#scannerVideo');
+  if (video) {
+    video.pause();
+    video.srcObject = null;
+  }
+
+  const button = $('#startScanner');
+  if (button) {
+    button.textContent = 'Start';
+    button.classList.remove('danger');
+    button.classList.add('secondary');
+  }
+
+  state.scannerBusy = false;
+  state.lastScan = '';
+  state.lastScanAt = 0;
+  setScanStatus(message);
+}
+
+async function openCameraStream() {
+  try {
+    return await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' } },
+      audio: false
+    });
+  } catch (error) {
+    if (['OverconstrainedError', 'ConstraintNotSatisfiedError', 'NotFoundError'].includes(error.name)) {
+      return navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+    }
+    throw error;
+  }
+}
+
+async function handleScannedToken(token) {
+  const value = String(token || '').trim();
+  if (!value || state.scannerBusy) return;
+
+  const now = Date.now();
+  if (value === state.lastScan && now - state.lastScanAt < 3000) return;
+
+  state.scannerBusy = true;
+  state.lastScan = value;
+  state.lastScanAt = now;
+  setScanStatus('QR code detected. Recording attendance...');
+
+  try {
+    await submitQrToken(value);
+    setScanStatus('QR code scanned and attendance updated.', 'ok');
+  } catch (error) {
+    setScanStatus(error.message, 'warn');
+  } finally {
+    window.setTimeout(() => {
+      state.scannerBusy = false;
+      if (state.scanner) setScanStatus('Scanning...');
+    }, 1200);
+  }
+}
+
+function scanWithJsQr(video, canvas) {
+  if (!window.jsQR || !canvas || video.readyState < HTMLMediaElement.HAVE_ENOUGH_DATA) return;
+
+  const width = video.videoWidth;
+  const height = video.videoHeight;
+  if (!width || !height) return;
+
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  context.drawImage(video, 0, 0, width, height);
+  const imageData = context.getImageData(0, 0, width, height);
+  const code = window.jsQR(imageData.data, width, height, { inversionAttempts: 'dontInvert' });
+  if (code?.data) handleScannedToken(code.data);
+}
+
 async function startScanner() {
-  if (!('BarcodeDetector' in window)) {
-    setMessage('#scanStatus', 'BarcodeDetector is not available in this browser. Paste the QR token instead.');
+  if (state.scanner) {
+    stopScanner();
     return;
   }
 
-  const detector = new BarcodeDetector({ formats: ['qr_code'] });
+  if (!currentSeminarId()) {
+    setScanStatus('Select a seminar first.', 'warn');
+    return;
+  }
+
+  if (!window.isSecureContext) {
+    setScanStatus('Camera access is blocked on insecure pages. On your phone, use HTTPS with your computer IP address, for example https://<computer-ip>/crudajax/public/admin.php.', 'warn');
+    return;
+  }
+
+  if (!navigator.mediaDevices?.getUserMedia) {
+    setScanStatus('This browser does not support camera access. Paste the QR token manually instead.', 'warn');
+    return;
+  }
+
+  const hasNativeScanner = 'BarcodeDetector' in window;
+  const hasFallbackScanner = 'jsQR' in window;
+
+  if (!hasNativeScanner && !hasFallbackScanner) {
+    setScanStatus('This browser cannot read QR codes here. Paste the QR token manually instead.', 'warn');
+    return;
+  }
+
   const video = $('#scannerVideo');
-  const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-  video.srcObject = stream;
-  await video.play();
-  setMessage('#scanStatus', 'Scanning...');
+  const canvas = $('#scannerCanvas');
+  let detector = null;
+
+  try {
+    if (hasNativeScanner) {
+      detector = new BarcodeDetector({ formats: ['qr_code'] });
+    }
+
+    state.scannerStream = await openCameraStream();
+  } catch (error) {
+    setScanStatus(scannerErrorMessage(error), 'warn');
+    return;
+  }
+
+  try {
+    video.srcObject = state.scannerStream;
+    await video.play();
+  } catch (error) {
+    stopScanner(scannerErrorMessage(error));
+    $('#scanStatus')?.classList.add('warn');
+    return;
+  }
+
+  const button = $('#startScanner');
+  if (button) {
+    button.textContent = 'Stop';
+    button.classList.remove('secondary');
+    button.classList.add('danger');
+  }
+
+  setScanStatus(hasNativeScanner ? 'Scanning with native QR detector...' : 'Scanning with fallback QR detector...');
 
   state.scanner = window.setInterval(async () => {
-    const codes = await detector.detect(video);
-    if (!codes.length) return;
-
-    const token = codes[0].rawValue.trim();
-    const now = Date.now();
-    if (token === state.lastScan && now - state.lastScanAt < 3000) return;
-    state.lastScan = token;
-    state.lastScanAt = now;
-
     try {
-      await submitQrToken(token);
+      if (detector) {
+        let codes = [];
+        try {
+          codes = await detector.detect(video);
+        } catch (error) {
+          if (!hasFallbackScanner) throw error;
+          detector = null;
+          setScanStatus('Native QR detector is unavailable. Switching to fallback scanner...');
+          return;
+        }
+        if (codes.length) {
+          await handleScannedToken(codes[0].rawValue);
+          return;
+        }
+      } else {
+        scanWithJsQr(video, canvas);
+      }
     } catch (error) {
-      setMessage('#scanStatus', error.message);
+      setScanStatus(scannerErrorMessage(error), 'warn');
     }
-  }, 700);
+  }, 300);
 }
 
 async function refreshLiveData() {
@@ -201,16 +388,13 @@ async function refreshLiveData() {
 function bindEvents() {
   $$('.nav-link').forEach((button) => {
     button.addEventListener('click', () => {
-      $$('.nav-link').forEach((item) => item.classList.remove('active'));
-      $$('.page').forEach((page) => page.classList.remove('active'));
-      button.classList.add('active');
-      $(`#page-${button.dataset.page}`).classList.add('active');
+      activatePage(button.dataset.page);
     });
   });
 
   $('#logoutBtn').addEventListener('click', async () => {
     await api('auth', 'logout', { method: 'POST' });
-    window.location.href = 'index.php';
+    window.location.replace(ADMIN_URL);
   });
 
   $('#studentForm').addEventListener('submit', async (event) => {
@@ -264,7 +448,21 @@ function bindEvents() {
     }
   });
 
+  $('#viewAllSessions').addEventListener('click', () => {
+    activatePage('reports');
+  });
+
+  $('#sessionRows').addEventListener('click', async (event) => {
+    const row = event.target.closest('[data-session-id]');
+    if (!row) return;
+
+    activatePage('reports');
+    $('#reportSeminar').value = row.dataset.sessionId;
+    await loadReport();
+  });
+
   $('#startScanner').addEventListener('click', startScanner);
+  window.addEventListener('beforeunload', () => stopScanner(''));
 
   $('#manualForm').addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -294,13 +492,15 @@ function bindEvents() {
     await refreshLiveData();
   });
 
-  ['#dashboardSeminar', '#reportSeminar'].forEach((selector) => {
-    $(selector).addEventListener('change', () => selector === '#reportSeminar' ? loadReport() : loadDashboard());
+  ['#dashboardSeminar', '#reportSeminar', '#reportStatus'].forEach((selector) => {
+    $(selector).addEventListener('change', () => selector === '#dashboardSeminar' ? loadDashboard() : loadReport());
   });
 
   $('#downloadReport').addEventListener('click', () => {
     const seminarId = currentSeminarId('#reportSeminar');
-    if (seminarId) window.location.href = `${API}?resource=reports&action=csv&seminar_id=${seminarId}`;
+    const status = $('#reportStatus')?.value || '';
+    const statusParam = status ? `&status=${encodeURIComponent(status)}` : '';
+    if (seminarId) window.location.href = `${API}?resource=reports&action=csv&seminar_id=${seminarId}${statusParam}`;
   });
 }
 

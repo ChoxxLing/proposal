@@ -1,11 +1,13 @@
 const loginForm = document.getElementById('loginForm');
 const loginMessage = document.getElementById('loginMessage');
+const API = window.APP_API || '../api/index.php';
+const ADMIN_URL = window.APP_ADMIN_URL || 'admin.php';
 
 loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   loginMessage.textContent = 'Signing in...';
 
-  const res = await fetch('../api/index.php?resource=auth&action=login', {
+  const res = await fetch(`${API}?resource=auth&action=login`, {
     method: 'POST',
     body: new FormData(loginForm)
   });
@@ -18,5 +20,5 @@ loginForm.addEventListener('submit', async (event) => {
     return;
   }
 
-  window.location.href = 'index.php';
+  window.location.replace(ADMIN_URL);
 });

@@ -6,6 +6,11 @@
         </div>
         <div class="actions">
             <select id="reportSeminar"></select>
+            <select id="reportStatus">
+                <option value="">All Students</option>
+                <option value="present">Present</option>
+                <option value="absent">Absent</option>
+            </select>
             <button id="downloadReport" class="primary" type="button">Download CSV</button>
         </div>
     </header>

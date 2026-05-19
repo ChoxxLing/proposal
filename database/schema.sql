@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS students (
   student_no VARCHAR(60) NOT NULL UNIQUE,
   first_name VARCHAR(120) NOT NULL,
   last_name VARCHAR(120) NOT NULL,
-  grade_level VARCHAR(40) NULL,
+  batch_num VARCHAR(40) NULL,
   section VARCHAR(80) NULL,
   parent_name VARCHAR(160) NOT NULL,
   parent_phone VARCHAR(40) NOT NULL,

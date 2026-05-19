@@ -47,6 +47,13 @@ class AttendanceController
     {
         Auth::requireLogin();
         $seminarId = (int) ($_GET['seminar_id'] ?? 0);
-        Response::json(['rows' => (new Attendance())->report($seminarId)]);
+        $status = $this->statusFilter($_GET['status'] ?? '');
+        Response::json(['rows' => (new Attendance())->report($seminarId, $status)]);
+    }
+
+    private function statusFilter(string $status): ?string
+    {
+        $status = strtolower(trim($status));
+        return in_array($status, ['present', 'absent'], true) ? $status : null;
     }
 }

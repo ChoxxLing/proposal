@@ -31,9 +31,24 @@ Local debugging is enabled in `config/app.php`. API errors are also written to `
 Use this header:
 
 ```csv
-student_no,first_name,last_name,grade_level,section,parent_name,parent_phone
+student_no,first_name,last_name,batch_num,section,parent_name,parent_phone
 ```
 
 ## SMS Gateway
 
 SMS delivery is logged as `simulated` until `SMS_API_URL` and `SMS_API_KEY` are configured. The gateway request belongs in `app/Services/SmsService.php`.
+
+## Testing QR Scanner on Phone
+
+1. Connect your phone and computer to the same WiFi network.
+2. Find your computer's local IP address, then open the admin page on your phone:
+
+```text
+https://<computer-ip>/crudajax/public/admin.php
+```
+
+Do not use `localhost` on your phone because that points to the phone itself, not your computer.
+
+Most phone browsers block camera access on normal `http://<computer-ip>` pages. Use HTTPS for phone testing. If the browser blocks the camera, the QR Attendance page will show a warning and you can still paste the QR token manually.
+
+The scanner uses the browser `BarcodeDetector` API when available and falls back to the local `public/assets/js/vendor/jsqr.min.js` decoder for browsers that do not support it, including many iPhone/Safari versions.

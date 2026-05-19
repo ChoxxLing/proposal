@@ -24,7 +24,7 @@ class Student extends Model
         $qrToken = bin2hex(random_bytes(16));
         $stmt = $this->db->prepare(
             'INSERT INTO students
-             (student_no, first_name, last_name, grade_level, section, parent_name, parent_phone, qr_token, created_by)
+             (student_no, first_name, last_name, batch_num, section, parent_name, parent_phone, qr_token, created_by)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->bind_param(
@@ -32,7 +32,7 @@ class Student extends Model
             $data['student_no'],
             $data['first_name'],
             $data['last_name'],
-            $data['grade_level'],
+            $data['batch_num'],
             $data['section'],
             $data['parent_name'],
             $data['parent_phone'],
@@ -74,7 +74,7 @@ class Student extends Model
                     'student_no' => trim($data['student_no']),
                     'first_name' => trim($data['first_name'] ?? ''),
                     'last_name' => trim($data['last_name'] ?? ''),
-                    'grade_level' => trim($data['grade_level'] ?? ''),
+                    'batch_num' => trim($data['batch_num'] ?? ''),
                     'section' => trim($data['section'] ?? ''),
                     'parent_name' => trim($data['parent_name'] ?? ''),
                     'parent_phone' => trim($data['parent_phone'] ?? ''),

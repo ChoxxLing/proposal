@@ -1,0 +1,54 @@
+[2026-05-19 15:57:37] mysqli_sql_exception: Cannot add or update a child row: a foreign key constraint fails (`parenting_seminar`.`attendance`, CONSTRAINT `fk_attendance_seminar` FOREIGN KEY (`seminar_id`) REFERENCES `seminars` (`id`) ON DELETE CASCADE) in C:\xampp\htdocs\crudajax\app\Models\Attendance.php:49
+#0 C:\xampp\htdocs\crudajax\app\Models\Attendance.php(49): mysqli_stmt->execute()
+#1 C:\xampp\htdocs\crudajax\app\Controllers\AttendanceController.php(42): Attendance->recordAbsentees(0)
+#2 C:\xampp\htdocs\crudajax\api\index.php(34): AttendanceController->close()
+#3 {main}
+
+[2026-05-19 16:39:43] mysqli_sql_exception: Unknown column 's.batch_num' in 'field list' in C:\xampp\htdocs\crudajax\app\Models\Attendance.php:119
+#0 C:\xampp\htdocs\crudajax\app\Models\Attendance.php(119): mysqli->prepare('SELECT s.studen...')
+#1 C:\xampp\htdocs\crudajax\app\Controllers\AttendanceController.php(51): Attendance->report(3, NULL)
+#2 C:\xampp\htdocs\crudajax\api\index.php(35): AttendanceController->report()
+#3 {main}
+
+[2026-05-19 16:39:48] mysqli_sql_exception: Unknown column 's.batch_num' in 'field list' in C:\xampp\htdocs\crudajax\app\Models\Attendance.php:119
+#0 C:\xampp\htdocs\crudajax\app\Models\Attendance.php(119): mysqli->prepare('SELECT s.studen...')
+#1 C:\xampp\htdocs\crudajax\app\Controllers\AttendanceController.php(51): Attendance->report(3, NULL)
+#2 C:\xampp\htdocs\crudajax\api\index.php(35): AttendanceController->report()
+#3 {main}
+
+[2026-05-19 16:42:02] mysqli_sql_exception: Unknown database 'parenting_seminar' in C:\xampp\htdocs\crudajax\config\db.php:14
+#0 C:\xampp\htdocs\crudajax\config\db.php(14): mysqli->__construct('localhost', 'root', Object(SensitiveParameterValue), 'parenting_semin...')
+#1 C:\xampp\htdocs\crudajax\app\Core\Model.php(9): DB::connect()
+#2 C:\xampp\htdocs\crudajax\app\Controllers\DashboardController.php(21): Model->__construct()
+#3 C:\xampp\htdocs\crudajax\app\Controllers\DashboardController.php(8): DashboardController->closeEndedSeminars()
+#4 C:\xampp\htdocs\crudajax\api\index.php(16): DashboardController->stats()
+#5 {main}
+
+[2026-05-19 16:42:03] mysqli_sql_exception: Unknown database 'parenting_seminar' in C:\xampp\htdocs\crudajax\config\db.php:14
+#0 C:\xampp\htdocs\crudajax\config\db.php(14): mysqli->__construct('localhost', 'root', Object(SensitiveParameterValue), 'parenting_semin...')
+#1 C:\xampp\htdocs\crudajax\app\Core\Model.php(9): DB::connect()
+#2 C:\xampp\htdocs\crudajax\app\Controllers\StudentController.php(8): Model->__construct()
+#3 C:\xampp\htdocs\crudajax\api\index.php(18): StudentController->index()
+#4 {main}
+
+[2026-05-19 16:42:03] mysqli_sql_exception: Unknown database 'parenting_seminar' in C:\xampp\htdocs\crudajax\config\db.php:14
+#0 C:\xampp\htdocs\crudajax\config\db.php(14): mysqli->__construct('localhost', 'root', Object(SensitiveParameterValue), 'parenting_semin...')
+#1 C:\xampp\htdocs\crudajax\app\Core\Model.php(9): DB::connect()
+#2 C:\xampp\htdocs\crudajax\app\Controllers\SeminarController.php(8): Model->__construct()
+#3 C:\xampp\htdocs\crudajax\api\index.php(24): SeminarController->index()
+#4 {main}
+
+[2026-05-19 16:42:07] mysqli_sql_exception: Unknown database 'parenting_seminar' in C:\xampp\htdocs\crudajax\config\db.php:14
+#0 C:\xampp\htdocs\crudajax\config\db.php(14): mysqli->__construct('localhost', 'root', Object(SensitiveParameterValue), 'parenting_semin...')
+#1 C:\xampp\htdocs\crudajax\app\Core\Model.php(9): DB::connect()
+#2 C:\xampp\htdocs\crudajax\app\Controllers\StudentController.php(8): Model->__construct()
+#3 C:\xampp\htdocs\crudajax\api\index.php(18): StudentController->index()
+#4 {main}
+
+[2026-05-19 16:42:07] mysqli_sql_exception: Unknown database 'parenting_seminar' in C:\xampp\htdocs\crudajax\config\db.php:14
+#0 C:\xampp\htdocs\crudajax\config\db.php(14): mysqli->__construct('localhost', 'root', Object(SensitiveParameterValue), 'parenting_semin...')
+#1 C:\xampp\htdocs\crudajax\app\Core\Model.php(9): DB::connect()
+#2 C:\xampp\htdocs\crudajax\app\Controllers\SeminarController.php(8): Model->__construct()
+#3 C:\xampp\htdocs\crudajax\api\index.php(24): SeminarController->index()
+#4 {main}
+

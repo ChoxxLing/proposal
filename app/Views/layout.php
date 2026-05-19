@@ -1,10 +1,23 @@
+<?php
+$publicBasePath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
+$projectBasePath = preg_replace('#/public$#', '', $publicBasePath);
+$assetBasePath = ($publicBasePath === '' ? '' : $publicBasePath) . '/assets';
+$apiBasePath = ($projectBasePath === '' ? '' : $projectBasePath) . '/api/index.php';
+$adminUrl = ($publicBasePath === '' ? '' : $publicBasePath) . '/admin.php';
+$stylesPath = __DIR__ . '/../../public/assets/css/styles.css';
+$qrScriptPath = __DIR__ . '/../../public/assets/js/vendor/jsqr.min.js';
+$appScriptPath = __DIR__ . '/../../public/assets/js/app.js';
+$stylesVersion = file_exists($stylesPath) ? (string) filemtime($stylesPath) : (string) time();
+$qrScriptVersion = file_exists($qrScriptPath) ? (string) filemtime($qrScriptPath) : (string) time();
+$appScriptVersion = file_exists($appScriptPath) ? (string) filemtime($appScriptPath) : (string) time();
+?>
 <!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Parenting Seminar Attendance</title>
-    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="<?= htmlspecialchars($assetBasePath) ?>/css/styles.css?v=<?= htmlspecialchars($stylesVersion) ?>">
 </head>
 <body>
     <aside class="sidebar">
@@ -39,7 +52,10 @@
 
     <script>
         window.APP_USER = <?= json_encode($admin) ?>;
+        window.APP_API = <?= json_encode($apiBasePath) ?>;
+        window.APP_ADMIN_URL = <?= json_encode($adminUrl) ?>;
     </script>
-    <script src="assets/js/app.js"></script>
+    <script src="<?= htmlspecialchars($assetBasePath) ?>/js/vendor/jsqr.min.js?v=<?= htmlspecialchars($qrScriptVersion) ?>"></script>
+    <script src="<?= htmlspecialchars($assetBasePath) ?>/js/app.js?v=<?= htmlspecialchars($appScriptVersion) ?>"></script>
 </body>
 </html>

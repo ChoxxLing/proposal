@@ -16,13 +16,9 @@
 
     <section class="panel">
         <header class="panel-header">
-            <h2>Recent SMS Delivery Logs</h2>
+            <h2>Recent Sessions</h2>
+            <button id="viewAllSessions" class="ghost" type="button">View All Sessions</button>
         </header>
-        <div class="table-wrap">
-            <table>
-                <thead><tr><th>Seminar</th><th>Parent Phone</th><th>Status</th><th>Sent At</th></tr></thead>
-                <tbody id="smsLogRows"></tbody>
-            </table>
-        </div>
+        <div class="session-list" id="sessionRows"></div>
     </section>
 </section>

@@ -14,7 +14,7 @@
                 <input name="student_no" placeholder="Student No" required>
                 <input name="first_name" placeholder="First Name" required>
                 <input name="last_name" placeholder="Last Name" required>
-                <input name="grade_level" placeholder="Grade Level">
+                <input name="batch_num" placeholder="Batch No.">
                 <input name="section" placeholder="Section">
                 <input name="parent_name" placeholder="Parent Name" required>
                 <input name="parent_phone" placeholder="Parent Phone" required>
@@ -29,7 +29,7 @@
                 <input type="file" name="csv" accept=".csv" required>
                 <button class="secondary" type="submit">Import CSV</button>
             </form>
-            <p class="muted">Header: student_no, first_name, last_name, grade_level, section, parent_name, parent_phone</p>
+            <p class="muted">Header: student_no, first_name, last_name, batch_num, section, parent_name, parent_phone</p>
             <p class="message" id="csvMessage"></p>
         </section>
     </div>

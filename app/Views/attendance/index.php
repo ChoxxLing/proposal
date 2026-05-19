@@ -14,7 +14,10 @@
                 <button id="startScanner" class="secondary" type="button">Start</button>
             </header>
             <video id="scannerVideo" playsinline muted></video>
-            <p id="scanStatus" class="message">Camera scanner uses the browser BarcodeDetector API when available.</p>
+            <canvas id="scannerCanvas" class="is-hidden"></canvas>
+            <p id="scanStatus" class="message scanner-status">
+                Select a seminar, then start the camera. On a phone, open this page with HTTPS using your computer IP address.
+            </p>
         </section>
 
         <section class="panel">

@@ -24,7 +24,7 @@ class StudentController
                 'student_no' => trim($_POST['student_no']),
                 'first_name' => trim($_POST['first_name']),
                 'last_name' => trim($_POST['last_name']),
-                'grade_level' => trim($_POST['grade_level'] ?? ''),
+                'batch_num' => trim($_POST['batch_num'] ?? ''),
                 'section' => trim($_POST['section'] ?? ''),
                 'parent_name' => trim($_POST['parent_name']),
                 'parent_phone' => trim($_POST['parent_phone']),

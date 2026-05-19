@@ -82,19 +82,57 @@ class Attendance extends Model
         ];
     }
 
-    public function report(int $seminarId): array
+    public function recentSessions(int $limit = 5): array
     {
+        $totalStudents = (int) $this->db->query('SELECT COUNT(*) total FROM students WHERE is_active = 1')->fetch_assoc()['total'];
         $stmt = $this->db->prepare(
-            "SELECT s.student_no, s.first_name, s.last_name, s.grade_level, s.section,
+            "SELECT sem.id, sem.title, sem.seminar_date, sem.start_time, sem.end_time, sem.venue, sem.status,
+                    COALESCE(SUM(a.status = 'present'), 0) present
+             FROM seminars sem
+             LEFT JOIN attendance a ON a.seminar_id = sem.id
+             WHERE sem.status != 'archived'
+             GROUP BY sem.id, sem.title, sem.seminar_date, sem.start_time, sem.end_time, sem.venue, sem.status
+             ORDER BY sem.seminar_date DESC, sem.start_time DESC
+             LIMIT ?"
+        );
+        $stmt->bind_param('i', $limit);
+        $stmt->execute();
+
+        return array_map(static function (array $session) use ($totalStudents): array {
+            $present = (int) $session['present'];
+            $session['total_students'] = $totalStudents;
+            $session['present'] = $present;
+            $session['absent'] = max(0, $totalStudents - $present);
+            $session['attendance_rate'] = $totalStudents > 0 ? round(($present / $totalStudents) * 100, 2) : 0;
+
+            return $session;
+        }, $stmt->get_result()->fetch_all(MYSQLI_ASSOC));
+    }
+
+    public function report(int $seminarId, ?string $status = null): array
+    {
+        $having = '';
+        if (in_array($status, ['present', 'absent'], true)) {
+            $having = 'HAVING status = ?';
+        }
+
+        $stmt = $this->db->prepare(
+            "SELECT s.student_no, s.first_name, s.last_name, s.batch_num, s.section,
                     s.parent_name, s.parent_phone,
                     COALESCE(a.status, 'absent') status,
                     a.check_in_method, a.checked_in_at
              FROM students s
              LEFT JOIN attendance a ON a.student_id = s.id AND a.seminar_id = ?
              WHERE s.is_active = 1
+             $having
              ORDER BY s.last_name, s.first_name"
         );
-        $stmt->bind_param('i', $seminarId);
+
+        if ($having) {
+            $stmt->bind_param('is', $seminarId, $status);
+        } else {
+            $stmt->bind_param('i', $seminarId);
+        }
         $stmt->execute();
 
         return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);

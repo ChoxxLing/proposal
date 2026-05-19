@@ -12,7 +12,7 @@ class DashboardController
         Response::json([
             'stats' => (new Attendance())->stats($seminarId),
             'seminars' => (new Seminar())->all(),
-            'sms_logs' => (new SmsLog())->recent(),
+            'sessions' => (new Attendance())->recentSessions(),
         ]);
     }
 

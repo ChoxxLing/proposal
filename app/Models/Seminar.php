@@ -22,6 +22,25 @@ class Seminar extends Model
         return $stmt->get_result()->fetch_assoc() ?: null;
     }
 
+    public function publicSchedule(): array
+    {
+        $result = $this->db->query(
+            "SELECT *,
+                CASE
+                    WHEN seminar_date = CURDATE()
+                        AND end_time >= CURTIME()
+                    THEN 'current'
+                    ELSE 'upcoming'
+                END AS public_status
+             FROM seminars
+             WHERE status = 'scheduled'
+             AND TIMESTAMP(seminar_date, end_time) >= NOW()
+             ORDER BY seminar_date ASC, start_time ASC"
+        );
+
+        return $result->fetch_all(MYSQLI_ASSOC);
+    }
+
     public function create(array $data, int $adminId): int
     {
         $stmt = $this->db->prepare(

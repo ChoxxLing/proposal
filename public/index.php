@@ -2,11 +2,6 @@
 
 require_once __DIR__ . '/../app/bootstrap.php';
 
-$admin = Auth::user();
+$seminars = (new Seminar())->publicSchedule();
 
-if (!$admin) {
-    require __DIR__ . '/../app/Views/auth/login.php';
-    exit;
-}
-
-require __DIR__ . '/../app/Views/layout.php';
+require __DIR__ . '/../app/Views/public/landing.php';
