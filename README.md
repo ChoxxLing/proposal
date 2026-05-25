@@ -8,6 +8,31 @@ Vanilla HTML, CSS, JavaScript, PHP, and MySQL implementation using an MVC-style 
 2. Confirm `config/db.php` uses your local MySQL credentials.
 3. Open `http://localhost/<foldername>/public/`.
 
+## Docker Setup
+
+Run the app locally with PHP, Apache, MySQL, and phpMyAdmin:
+
+```bash
+docker compose up -d --build
+```
+
+If your Docker installation uses the legacy Compose command, run `docker-compose up -d --build` instead.
+
+Open the app:
+
+- Public site: `http://localhost:8080/project/public/`
+- Admin login: `http://localhost:8080/project/public/admin.php`
+- phpMyAdmin: `http://localhost:8081`
+
+Docker database credentials:
+
+- Host: `db`
+- Database: `parenting_seminar`
+- User: `app`
+- Password: `app_password`
+
+The MySQL container imports `database/schema.sql` automatically the first time the `db_data` volume is created. If the volume already exists, the schema import will not run again unless you recreate the volume.
+
 Default accounts:
 
 - Admin: `admin@example.com` / `password`
