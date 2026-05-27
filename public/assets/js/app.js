@@ -1,5 +1,5 @@
 const API = window.APP_API || '../api/index.php';
-const ADMIN_URL = window.APP_ADMIN_URL || 'admin.php';
+const PUBLIC_URL = window.APP_PUBLIC_URL || 'index.php';
 const state = {
   seminars: [],
   students: [],
@@ -7,7 +7,8 @@ const state = {
   scannerStream: null,
   scannerBusy: false,
   lastScan: '',
-  lastScanAt: 0
+  lastScanAt: 0,
+  logoutInProgress: false
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -306,7 +307,7 @@ async function startScanner() {
   }
 
   if (!window.isSecureContext) {
-    setScanStatus('Camera access is blocked on insecure pages. On your phone, use HTTPS with your computer IP address, for example https://<computer-ip>/crudajax/public/admin.php.', 'warn');
+    setScanStatus('Camera access is blocked on insecure pages. On your phone, open https://<computer-ip>:8443/admin.php and allow camera permission.', 'warn');
     return;
   }
 
@@ -385,6 +386,31 @@ async function refreshLiveData() {
   await Promise.all([loadDashboard(), loadReport()]);
 }
 
+async function logoutAndReturn() {
+  if (state.logoutInProgress) return;
+  state.logoutInProgress = true;
+  stopScanner('');
+
+  try {
+    await api('auth', 'logout', { method: 'POST' });
+  } catch (error) {
+    console.warn(error);
+  } finally {
+    window.location.replace(PUBLIC_URL);
+  }
+}
+
+function setupBackButtonLogout() {
+  if (!window.history?.pushState) return;
+
+  window.history.replaceState({ adminDashboard: true }, '', window.location.href);
+  window.history.pushState({ adminDashboard: true }, '', window.location.href);
+
+  window.addEventListener('popstate', () => {
+    logoutAndReturn();
+  });
+}
+
 function bindEvents() {
   $$('.nav-link').forEach((button) => {
     button.addEventListener('click', () => {
@@ -392,9 +418,24 @@ function bindEvents() {
     });
   });
 
-  $('#logoutBtn').addEventListener('click', async () => {
-    await api('auth', 'logout', { method: 'POST' });
-    window.location.replace(ADMIN_URL);
+  $('#logoutBtn').addEventListener('click', () => {
+    const dialog = $('#logoutDialog');
+    if (dialog && !dialog.open) {
+      dialog.showModal();
+      return;
+    }
+
+    if (!dialog) logoutAndReturn();
+  });
+
+  $('#cancelLogout')?.addEventListener('click', () => {
+    $('#logoutDialog')?.close();
+  });
+
+  $('#confirmLogout')?.addEventListener('click', logoutAndReturn);
+
+  $('#logoutDialog')?.addEventListener('click', (event) => {
+    if (event.target === event.currentTarget) event.currentTarget.close();
   });
 
   $('#studentForm').addEventListener('submit', async (event) => {
@@ -515,6 +556,7 @@ function applyRoleUi() {
 }
 
 async function init() {
+  setupBackButtonLogout();
   bindEvents();
   applyRoleUi();
   await Promise.all([loadStudents(), loadSeminars()]);

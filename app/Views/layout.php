@@ -4,6 +4,17 @@ $projectBasePath = preg_replace('#/public$#', '', $publicBasePath);
 $assetBasePath = ($publicBasePath === '' ? '' : $publicBasePath) . '/assets';
 $apiBasePath = ($projectBasePath === '' ? '' : $projectBasePath) . '/api/index.php';
 $adminUrl = ($publicBasePath === '' ? '' : $publicBasePath) . '/admin.php';
+$publicUrl = ($publicBasePath === '' ? '' : $publicBasePath) . '/index.php';
+$requestHost = $_SERVER['HTTP_HOST'] ?? '';
+$requestPort = (string) ($_SERVER['SERVER_PORT'] ?? '');
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $requestPort === '443';
+$isDockerHttp = str_ends_with($requestHost, ':8080') || $requestPort === '8080';
+
+if (!$isHttps && $isDockerHttp) {
+    $httpsHost = preg_replace('/:\d+$/', '', $requestHost);
+    $adminUrl = 'https://' . $httpsHost . ':8443' . ($publicBasePath === '' ? '' : $publicBasePath) . '/admin.php';
+}
+
 $stylesPath = __DIR__ . '/../../public/assets/css/styles.css';
 $qrScriptPath = __DIR__ . '/../../public/assets/js/vendor/jsqr.min.js';
 $appScriptPath = __DIR__ . '/../../public/assets/js/app.js';
@@ -50,10 +61,23 @@ $appScriptVersion = file_exists($appScriptPath) ? (string) filemtime($appScriptP
         <?php require __DIR__ . '/reports/index.php'; ?>
     </main>
 
+    <dialog id="logoutDialog" class="confirm-dialog">
+        <div class="confirm-card">
+            <p class="eyebrow">Confirm Log Out</p>
+            <h2>Log out of this account?</h2>
+            <p class="muted">You will return to the public landing page.</p>
+            <div class="confirm-actions">
+                <button id="cancelLogout" type="button" class="secondary">Cancel</button>
+                <button id="confirmLogout" type="button" class="danger">Log out</button>
+            </div>
+        </div>
+    </dialog>
+
     <script>
         window.APP_USER = <?= json_encode($admin) ?>;
         window.APP_API = <?= json_encode($apiBasePath) ?>;
         window.APP_ADMIN_URL = <?= json_encode($adminUrl) ?>;
+        window.APP_PUBLIC_URL = <?= json_encode($publicUrl) ?>;
     </script>
     <script src="<?= htmlspecialchars($assetBasePath) ?>/js/vendor/jsqr.min.js?v=<?= htmlspecialchars($qrScriptVersion) ?>"></script>
     <script src="<?= htmlspecialchars($assetBasePath) ?>/js/app.js?v=<?= htmlspecialchars($appScriptVersion) ?>"></script>

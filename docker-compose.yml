@@ -4,6 +4,7 @@ services:
       context: .
     ports:
       - "8080:80"
+      - "8443:443"
     environment:
       DB_HOST: db
       DB_USER: app
