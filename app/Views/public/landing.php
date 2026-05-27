@@ -12,6 +12,17 @@ $upcomingCount = count($seminars) - $currentCount;
 $firstSeminar = $seminars[0] ?? null;
 $publicBasePath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
 $assetBasePath = ($publicBasePath === '' ? '' : $publicBasePath) . '/assets';
+$adminUrl = ($publicBasePath === '' ? '' : $publicBasePath) . '/admin.php';
+$requestHost = $_SERVER['HTTP_HOST'] ?? '';
+$requestPort = (string) ($_SERVER['SERVER_PORT'] ?? '');
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || $requestPort === '443';
+$isDockerHttp = str_ends_with($requestHost, ':8080') || $requestPort === '8080';
+
+if (!$isHttps && $isDockerHttp) {
+    $httpsHost = preg_replace('/:\d+$/', '', $requestHost);
+    $adminUrl = 'https://' . $httpsHost . ':8443' . ($publicBasePath === '' ? '' : $publicBasePath) . '/admin.php';
+}
+
 $stylesPath = __DIR__ . '/../../../public/assets/css/styles.css';
 $stylesVersion = file_exists($stylesPath) ? (string) filemtime($stylesPath) : (string) time();
 ?>
@@ -26,7 +37,7 @@ $stylesVersion = file_exists($stylesPath) ? (string) filemtime($stylesPath) : (s
 <body class="public-screen">
     <header class="public-header">
         <a class="public-wordmark" href="index.php">AttendSmart</a>
-        <a class="admin-link" href="admin.php">Login</a>
+        <a class="admin-link" href="<?= htmlspecialchars($adminUrl) ?>">Login</a>
     </header>
 
     <main class="public-main">
@@ -175,7 +186,7 @@ $stylesVersion = file_exists($stylesPath) ? (string) filemtime($stylesPath) : (s
         </div>
         <div>
             <strong>Access</strong>
-            <a href="admin.php">Admin Login</a>
+            <a href="<?= htmlspecialchars($adminUrl) ?>">Admin Login</a>
         </div>
     </footer>
 </body>

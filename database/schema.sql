@@ -90,8 +90,8 @@ CREATE TABLE IF NOT EXISTS sms_logs (
 
 INSERT INTO admins (name, email, password_hash, role)
 VALUES
-  ('System Administrator', 'admin@example.com', '$2y$10$ds76IjA/qdI7YINZm/ZF7uZw.R9DTdbXFra4.uNjQwXLrsgb0zBOu', 'admin'),
-  ('Attendance Staff', 'staff@example.com', '$2y$10$ds76IjA/qdI7YINZm/ZF7uZw.R9DTdbXFra4.uNjQwXLrsgb0zBOu', 'staff')
+  ('System Administrator', 'admin@admin.com', '$2y$10$ds76IjA/qdI7YINZm/ZF7uZw.R9DTdbXFra4.uNjQwXLrsgb0zBOu', 'admin'),
+  ('Attendance Staff', 'staff@admin.com', '$2y$10$ds76IjA/qdI7YINZm/ZF7uZw.R9DTdbXFra4.uNjQwXLrsgb0zBOu', 'staff')
 ON DUPLICATE KEY UPDATE
   name = VALUES(name),
   password_hash = VALUES(password_hash),

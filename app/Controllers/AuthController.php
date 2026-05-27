@@ -13,18 +13,7 @@ class AuthController
 
         $admin = (new Admin())->findByEmail($email);
         if (!$admin || !password_verify($password, $admin['password_hash'])) {
-            $payload = ['error' => 'Invalid login credentials.'];
-
-            if (ErrorHandler::debug()) {
-                $payload['debug'] = [
-                    'email_found' => (bool) $admin,
-                    'is_active' => $admin ? (int) $admin['is_active'] : null,
-                    'hash_prefix' => $admin ? substr($admin['password_hash'], 0, 7) : null,
-                    'hint' => 'If email_found is true, reset this account password_hash using database/schema.sql or the SQL in README.md.',
-                ];
-            }
-
-            Response::json($payload, 401);
+            Response::json(['error' => 'Incorrect email and password'], 401);
         }
 
         Auth::login($admin);
